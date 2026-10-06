@@ -6,11 +6,9 @@
 
 ## 在线地址
 
-GitHub Pages：推送后自动生成，路径为
+**<https://libai663106-maker.github.io/bitcoin-mining-cost-model/>**
 
-```
-https://<你的 GitHub 用户名>.github.io/<仓库名>/
-```
+GitHub Pages 自动部署：`main` 分支推送后即刻生效，数据源是 `main` 分支根目录。
 
 ## 本地运行
 

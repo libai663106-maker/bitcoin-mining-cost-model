@@ -1,0 +1,58 @@
+name: Refresh market snapshot
+
+# Keeps data/market.json current without a server. Static hosting means the
+# page cannot fetch mempool.space at runtime (CORS + no key), so the snapshot
+# is refreshed here and committed — the site itself stays 100% static.
+on:
+  schedule:
+    - cron: '17 3 * * *'   # daily, 03:17 UTC — off the top of the hour
+  workflow_dispatch:        # manual "Run workflow" button
+
+permissions:
+  contents: write           # required to push the refreshed snapshot
+
+concurrency:
+  group: refresh-market
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Node 22 ships a global fetch, so there are no dependencies to install.
+      - name: Fetch mempool.space and rebuild the snapshot
+        run: node scripts/refresh_market.mjs
+
+      - name: Commit when the snapshot actually changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/market.json index.html; then
+            echo "Snapshot unchanged — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/market.json index.html
+          git commit -m "chore: refresh market snapshot $(date -u +%Y-%m-%d)"
+          git push
+
+      # Optional. Cloudflare Pages normally redeploys straight off the Git
+      # integration; this hook is a belt-and-braces trigger for the case where
+      # a bot-authored push does not reach the Git integration. Skipped
+      # cleanly when the secret is not configured.
+      - name: Trigger Cloudflare Pages redeploy
+        env:
+          HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+        run: |
+          if [ -z "${HOOK:-}" ]; then
+            echo "No CLOUDFLARE_DEPLOY_HOOK secret set — relying on the Git integration."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK"
+          echo "Cloudflare Pages redeploy triggered."

@@ -1,0 +1,142 @@
+/* ==========================================================================
+ * Bitcoin Mining Cost Model — Design Token layer
+ * Only [data-theme] blocks map tokens -> literal colours.
+ * Component CSS must reference tokens exclusively.
+ * ========================================================================== */
+
+:root {
+  --r-sm: 6px; --r: 10px; --r-lg: 14px;
+  --f-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --f-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+            "Hiragino Sans GB", "Microsoft YaHei", Roboto, sans-serif;
+  --maxw: 1340px;
+  --shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  --shadow-lg: 0 4px 16px rgba(16,24,40,.08);
+  --t: background-color .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+
+/* ---------- Light — professional financial tool ---------- */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F7F8FA; --bg-sub: #FFFFFF; --bg-panel: #FFFFFF; --bg-inset: #F1F3F5; --bg-hover: #F8FAFC;
+  --card-bg: #FFFFFF; --card-hover: #F8FAFC;
+  --line: #E5E7EB; --line-strong: #D1D5DB; --line-faint: #F0F2F5;
+  --tx: #111827; --tx-2: #4B5563; --tx-3: #5C6370; --tx-4: #666E7B;
+  --accent: #2563EB; --accent-hover: #1D4ED8; --accent-light: #EFF6FF;
+  --accent-text: #1D4ED8; --accent-contrast: #FFFFFF;
+  --up: #C81E1E; --up-bg: #FEF2F2; --down: #15803D; --down-bg: #F0FDF4;
+  --positive: #15803D; --positive-bg: #F0FDF4;
+  --negative: #C81E1E; --negative-bg: #FEF2F2;
+  --neutral: #6B7280;
+  --success: #15803D; --warning: #B45309; --danger: #C81E1E;
+  --warning-bg: #FFFBEB;
+  --input-bg: #FFFFFF; --input-border: #D1D5DB; --input-focus: #2563EB;
+  --chart-1: #2563EB; --chart-2: #B45309; --chart-3: #15803D; --chart-4: #6D28D9;
+  /* 5 / 6 exist because the sensitivity matrix draws one line per BTC-growth
+     rung and the ladder is six rungs long. Four colours wrapped, and a wrapped
+     palette draws two different scenarios in the same hue. Hues are spaced
+     against 1–4, not merely "not equal": blue, ochre, green, violet, magenta,
+     teal. */
+  --chart-5: #BE185D; --chart-6: #0E7490;
+  --chart-grid: #E5E7EB; --chart-axis: #6B7280; --chart-neutral: #9CA3AF;
+  --chart-pos: #16A34A; --chart-neg: #DC2626; --chart-btc: #F7931A;
+  --brand-chip: #F7931A; --brand-chip-tx: #1A1005;
+  --tip-bg: #FFFFFF; --tip-line: #E5E7EB; --tip-tx: #111827;
+  --glow: none; --scrim: rgba(15,17,21,.42);
+}
+
+/* ---------- Dark — professional data terminal ---------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0F1115; --bg-sub: #151922; --bg-panel: #151922; --bg-inset: #1B202B; --bg-hover: #1A202B;
+  --card-bg: #151922; --card-hover: #1A202B;
+  --line: #272D38; --line-strong: #303744; --line-faint: #202631;
+  --tx: #F3F4F6; --tx-2: #A1A7B3; --tx-3: #8A93A1; --tx-4: #828A97;
+  --accent: #3B82F6; --accent-hover: #60A5FA; --accent-light: #172554;
+  --accent-text: #60A5FA; --accent-contrast: #0B1220;
+  --up: #F87171; --up-bg: #450A0A; --down: #22C55E; --down-bg: #052E16;
+  --positive: #22C55E; --positive-bg: #052E16;
+  --negative: #F87171; --negative-bg: #450A0A;
+  --neutral: #9CA3AF;
+  --success: #22C55E; --warning: #F59E0B; --danger: #F87171;
+  --warning-bg: #33230A;
+  --input-bg: #11151C; --input-border: #303744; --input-focus: #3B82F6;
+  --chart-1: #3B82F6; --chart-2: #A78BFA; --chart-3: #22C55E; --chart-4: #F59E0B;
+  --chart-5: #F472B6; --chart-6: #2DD4BF;
+  --chart-grid: #252B36; --chart-axis: #8B93A1; --chart-neutral: #9CA3AF;
+  --chart-pos: #22C55E; --chart-neg: #EF4444; --chart-btc: #F7931A;
+  --brand-chip: #F7931A; --brand-chip-tx: #1A1005;
+  --tip-bg: #1B202B; --tip-line: #303744; --tip-tx: #F3F4F6;
+  --glow: none; --scrim: rgba(3,6,12,.62);
+  --shadow: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,.4);
+}
+
+/* ---------- Tech — Bitcoin / crypto mining ---------- */
+[data-theme="tech"] {
+  color-scheme: dark;
+  --bg: #070B14; --bg-sub: #0B1220; --bg-panel: #0D1626; --bg-inset: #101A2E; --bg-hover: #111D32;
+  --card-bg: #0D1626; --card-hover: #111D32;
+  --line: #19304A; --line-strong: #22456A; --line-faint: #13263C;
+  --tx: #E6F1FF; --tx-2: #8FA7C2; --tx-3: #7795B3; --tx-4: #6E88A3;
+  --accent: #22D3EE; --accent-hover: #67E8F9; --accent-light: #083344;
+  --accent-text: #67E8F9; --accent-contrast: #04141C;
+  --up: #FB7185; --up-bg: #4C0519; --down: #34D399; --down-bg: #052E2B;
+  --positive: #34D399; --positive-bg: #052E2B;
+  --negative: #FB7185; --negative-bg: #4C0519;
+  --neutral: #8FA7C2;
+  --success: #34D399; --warning: #FBBF24; --danger: #FB7185;
+  --warning-bg: #3A2A08;
+  --input-bg: #09111E; --input-border: #1C3A59; --input-focus: #22D3EE;
+  --chart-1: #22D3EE; --chart-2: #E879F9; --chart-3: #34D399; --chart-4: #3B82F6;
+  --chart-5: #FBBF24; --chart-6: #A78BFA;
+  --chart-grid: #142A40; --chart-axis: #68809A; --chart-neutral: #68809A;
+  --chart-pos: #34D399; --chart-neg: #FB7185; --chart-btc: #F7931A;
+  --brand-chip: #F7931A; --brand-chip-tx: #1A1005;
+  --tip-bg: #0D1626; --tip-line: #22456A; --tip-tx: #E6F1FF;
+  --glow: 0 0 20px rgba(34,211,238,.08);
+  --scrim: rgba(2,6,14,.7);
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,.5);
+  --tech-grid:
+    linear-gradient(rgba(34,211,238,.030) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,211,238,.030) 1px, transparent 1px);
+}
+
+/* ---------- Minimal — high-end research institute ---------- */
+[data-theme="minimal"] {
+  color-scheme: light;
+  --bg: #F5F3EE; --bg-sub: #FBFAF7; --bg-panel: #FBFAF7; --bg-inset: #EEECE6; --bg-hover: #F7F5F0;
+  --card-bg: #FBFAF7; --card-hover: #F7F5F0;
+  --line: #E4E1D9; --line-strong: #D8D5CC; --line-faint: #ECEAE4;
+  --tx: #18181B; --tx-2: #52525B; --tx-3: #63636C; --tx-4: #666670;
+  --accent: #18181B; --accent-hover: #27272A; --accent-light: #E4E4E7;
+  --accent-text: #18181B; --accent-contrast: #FBFAF7;
+  --up: #8A4545; --up-bg: #F6ECEC; --down: #3F6B52; --down-bg: #EDF3EE;
+  --positive: #3F6B52; --positive-bg: #EDF3EE;
+  --negative: #8A4545; --negative-bg: #F6ECEC;
+  --neutral: #71717A;
+  --success: #3F6B52; --warning: #8A6A32; --danger: #8A4545;
+  --warning-bg: #F7F1E6;
+  --input-bg: #FBFAF7; --input-border: #D8D5CC; --input-focus: #18181B;
+  --chart-1: #2F3A46; --chart-2: #94631F; --chart-3: #3F6B52; --chart-4: #7C4557;
+  /* Two more muted plates for the same six-rung ladder — a high-end research
+     palette cannot borrow the vivid tones of the other themes, so these are
+     picked for separation at the same low chroma. */
+  --chart-5: #6B5B8A; --chart-6: #2E6470;
+  --chart-grid: #E4E1D9; --chart-axis: #71717A; --chart-neutral: #71717A;
+  --chart-pos: #3F6B52; --chart-neg: #8A4545; --chart-btc: #94631F;
+  --brand-chip: #F7931A; --brand-chip-tx: #1A1005;
+  --tip-bg: #FBFAF7; --tip-line: #E4E1D9; --tip-tx: #18181B;
+  --glow: none; --shadow: none; --shadow-lg: 0 1px 3px rgba(24,24,27,.06);
+  --scrim: rgba(24,24,27,.34);
+}
+
+[data-theme="tech"] body {
+  background-image: var(--tech-grid);
+  background-size: 34px 34px;
+}
+[data-theme="tech"] header.top {
+  box-shadow: 0 1px 0 var(--line), 0 0 24px rgba(34,211,238,.05);
+}
+[data-theme="tech"] .kpi.hero { box-shadow: var(--glow); }

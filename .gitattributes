@@ -1,0 +1,17 @@
+# Normalise line endings to LF in the repository and on checkout.
+#
+# Why this matters here: scripts/refresh_market.mjs rewrites data/market.json
+# and index.html from Node running on Linux (GitHub Actions). With Windows'
+# default autocrlf the working tree is CRLF, so every data refresh would show
+# up as a whole-file diff instead of a few changed numbers.
+* text=auto eol=lf
+
+# Binary assets — never normalise, never diff
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary

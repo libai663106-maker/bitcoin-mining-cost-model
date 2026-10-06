@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bitcoin Mining Cost Model — 比特币挖矿成本模型</title>
+<meta name="description" content="A professional Bitcoin mining cost model: all-in mining cost per BTC, shutdown BTC price, 18/24/48-month payback price, multi-year hashrate-adjusted projection, and mining versus buy &amp; hold.">
+<meta property="og:site_name" content="Bitcoin Mining Cost Model @miner_huang">
+<meta property="og:title" content="Bitcoin Mining Cost Model">
+<meta property="og:description" content="Estimate the real cost of mining BTC — all-in cost per BTC, shutdown price and multi-year projection.">
+<meta name="theme-color" content="#F7F8FA">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23F7931A'/%3E%3Ctext x='16' y='23' font-size='19' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'%3E%E2%82%BF%3C/text%3E%3C/svg%3E">
+<script>
+/* first-frame theme — inline, must run before the stylesheets paint */
+(function () {
+  var k = 'light';
+  try {
+    var s = localStorage.getItem('bmcm-theme');
+    if (/^(light|dark|tech|minimal)$/.test(s)) k = s;
+  } catch (e) { }
+  document.documentElement.setAttribute('data-theme', k);
+  document.documentElement.className += ' theme-boot';
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { document.documentElement.classList.remove('theme-boot'); });
+  });
+}());
+</script>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <span class="btc">₿</span>
+      <span data-i18n="app.brandFull">Bitcoin Mining Cost Model</span>
+    </div>
+    <div class="top-sp"></div>
+    <div class="status" id="dataStatus" title="">
+      <span class="dot"></span><span class="txt" data-i18n="status.connecting">Connecting…</span>
+    </div>
+    <button class="tbtn" id="langBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Change language" data-i18n-attr="aria-label:lang.aria">
+      <span class="glyph" aria-hidden="true">🌐</span><span id="langLabel">English</span>
+    </button>
+    <button class="tbtn" id="themeBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Change theme" data-i18n-attr="aria-label:theme.aria">
+      <span class="glyph" id="themeGlyph">☀</span><span id="themeLabel" data-i18n="theme.label">Theme</span>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ================= HERO ================= -->
+  <div class="hero-head">
+    <h1 class="title" data-i18n="hero.title">Bitcoin Mining Cost</h1>
+    <p class="subtitle" data-i18n="hero.sub">Estimate the real cost of mining BTC — all-in cost per coin, the price at which the machine shuts down,
+      and how both move as network hashrate grows.</p>
+    <div class="byline">
+      <a class="xlink" href="https://x.com/miner_huang" target="_blank" rel="noopener noreferrer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>
+        @miner_huang
+      </a>
+    </div>
+  </div>
+
+  <!-- ================= MODEL INPUTS ================= -->
+  <section class="sec panel">
+    <div class="panel-hd">
+      <h2 data-i18n="inp.title">Model Inputs</h2>
+      <span class="hint" data-i18n="inp.hint">every edit recomputes the whole model</span>
+      <div class="panel-sp"></div>
+      <button class="tbtn" id="btnReset" type="button" data-i18n="btn.reset">Reset</button>
+    </div>
+    <div class="in-groups">
+
+      <!-- A. Miner -->
+      <div class="in-group">
+        <h3><span class="bar"></span><span data-i18n="inp.hw">Miner parameters</span></h3>
+
+        <div class="field">
+          <label data-i18n="inp.miner">Miner model</label>
+          <div class="ctl solo"><select class="inp" data-k="minerKey" aria-label="Miner model" data-i18n-attr="aria-label:inp.miner"></select></div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.hashrate">Hashrate per unit</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="1" min="0" data-k="hashrate" aria-label="Hashrate" data-i18n-attr="aria-label:inp.hashrate">
+            <span class="unit">TH/s</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.power">Power draw</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="1" min="0" data-k="power" aria-label="Power" data-i18n-attr="aria-label:inp.power">
+            <span class="unit">W</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label><span data-i18n="inp.eff">Efficiency</span>
+            <button class="info" type="button" data-drawer="dEff" aria-label="How is this calculated?">i</button>
+          </label>
+          <div class="ctl">
+            <input class="inp" type="text" id="effOut" readonly aria-label="Efficiency" data-i18n-attr="aria-label:inp.eff" tabindex="-1">
+            <span class="unit">J/TH</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.price">Machine price</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="50" min="0" data-k="machinePrice" aria-label="Machine price" data-i18n-attr="aria-label:inp.price">
+            <span class="unit">USDT</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.pricePerTh">Price per TH</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="0.01" min="0" id="pricePerThIn" aria-label="Price per TH" data-i18n-attr="aria-label:inp.pricePerTh">
+            <span class="unit">$/TH</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.life">Service life</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="0.5" min="0.5" max="20" data-k="lifeYears" aria-label="Service life years" data-i18n-attr="aria-label:inp.life">
+            <span class="unit" data-i18n="inp.years">years</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.lifeDays">Service life days</label>
+          <div class="ctl">
+            <input class="inp" type="text" id="lifeDaysOut" readonly aria-label="Service life days" data-i18n-attr="aria-label:inp.lifeDays" tabindex="-1">
+            <span class="unit" data-i18n="inp.days">Days</span>
+          </div>
+        </div>
+
+        <div class="drawer" id="dEff">
+          <h4 data-i18n="fx.how">How is this calculated?</h4>
+          <div class="fx" data-i18n="fx.eff">Efficiency = Power ÷ Hashrate</div>
+          <div class="inp-row"><span data-i18n="fx.power">Power</span><b id="dEffP">—</b></div>
+          <div class="inp-row"><span data-i18n="inp.hashrate">Hashrate per unit</span><b id="dEffH">—</b></div>
+          <div class="inp-row"><span data-i18n="fx.result">Result</span><b id="dEffR">—</b></div>
+          <p class="note" data-i18n="fx.effNote">Also known as the machine's specific consumption. Lower J/TH means the same electricity buys more hashrate.</p>
+        </div>
+      </div>
+
+      <!-- B. Network -->
+      <div class="in-group">
+        <h3><span class="bar"></span><span data-i18n="inp.mkt">Market &amp; projection</span></h3>
+
+        <div class="field">
+          <label><span data-i18n="inp.btcPrice">BTC price</span>
+            <button class="info" type="button" data-drawer="dBtc" aria-label="How is this calculated?">i</button>
+          </label>
+          <div class="ctl">
+            <input class="inp" type="number" step="100" min="0" data-k="btcPrice" data-manual="btcPrice" aria-label="BTC price" data-i18n-attr="aria-label:inp.btcPrice">
+            <span class="unit">USD</span>
+          </div>
+          <div class="inspect">
+            <button class="livbtn on" type="button" data-live="btcPrice">Live</button>
+            <span class="status" style="padding:3px 8px"><span class="dot live" data-dot="btcPrice"></span><span data-livlab="btcPrice">Live</span></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label><span data-i18n="inp.netHash">Network hashrate</span>
+            <button class="info" type="button" data-drawer="dNet" aria-label="How is this calculated?">i</button>
+          </label>
+          <div class="ctl">
+            <input class="inp" type="number" step="10" min="0" data-k="networkHashrateEhs" data-manual="networkHashrate" aria-label="Network hashrate" data-i18n-attr="aria-label:inp.netHash">
+            <span class="unit">EH/s</span>
+          </div>
+          <div class="inspect">
+            <button class="livbtn on" type="button" data-live="networkHashrate">Live</button>
+            <span class="status" style="padding:3px 8px"><span class="dot live" data-dot="networkHashrate"></span><span data-livlab="networkHashrate">Live</span></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label><span data-i18n="inp.subsidy">Block subsidy</span>
+            <button class="info" type="button" data-drawer="dSub" aria-label="How is this calculated?">i</button>
+          </label>
+          <div class="ctl">
+            <input class="inp" type="number" step="0.0001" min="0" data-k="blockSubsidy" aria-label="Block subsidy" data-i18n-attr="aria-label:inp.subsidy">
+            <span class="unit" data-i18n="unit.btcPerBlock">BTC/blk</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label><span data-i18n="inp.nextHalving">Next halving block</span>
+            <button class="info" type="button" data-drawer="dHalv" aria-label="How is this calculated?">i</button>
+          </label>
+          <div class="ctl">
+            <input class="inp" type="number" step="1000" min="0" data-k="nextHalvingHeight" aria-label="Next halving height" data-i18n-attr="aria-label:inp.nextHalving">
+            <span class="unit" data-i18n="unit.block">Block</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.hashGrowth">Hashrate growth</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="1" min="0" max="200" data-k="hashrateGrowthAnnual" aria-label="Annual hashrate growth" data-i18n-attr="aria-label:inp.hashGrowth">
+            <span class="unit">% / yr</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.monthlyEq">Monthly equivalent</label>
+          <div class="ctl">
+            <input class="inp" type="text" id="mrOut" readonly aria-label="Monthly equivalent growth" data-i18n-attr="aria-label:inp.monthlyEq" tabindex="-1">
+            <span class="unit">% / mo</span>
+          </div>
+        </div>
+
+        <div class="drawer" id="dBtc">
+          <h4 data-i18n="fx.how">How is this calculated?</h4>
+          <p class="note" style="margin-top:0" data-i18n="fx.spotLive">Live price is read from the baked market snapshot. Switch to Manual to model any scenario — the whole dashboard, the shutdown curve and all charts respond immediately.</p>
+          <div class="fx" data-i18n="fx.spotFeed">BTC Price → Feed into: revenue, cost ratio, mining ROI, spot ROI, payback prices</div>
+        </div>
+
+        <div class="drawer" id="dNet">
+          <h4 data-i18n="fx.how">How is this calculated?</h4>
+          <div class="fx" data-i18n="fx.net">Network hashrate is the denominator of every BTC production figure.</div>
+          <p class="note" style="margin-top:0" data-i18n="fx.netNote">The live value is the mempool.space network estimate. A 4% spread against difficulty-derived figures is normal — this is a snapshot, not a real-time feed.</p>
+        </div>
+
+        <div class="drawer" id="dSub">
+          <h4 data-i18n="fx.how">How is this calculated?</h4>
+          <div class="fx" data-i18n="fx.sub">Subsidy(era) = 50 ÷ 2^era, era = floor(height ÷ 210,000)</div>
+          <p class="note" style="margin-top:0" data-i18n="fx.subNote">Detected automatically from block height. Not hard-coded to a calendar date.</p>
+        </div>
+
+        <div class="drawer" id="dHalv">
+          <h4 data-i18n="fx.how">How is this calculated?</h4>
+          <div class="fx" data-i18n="fx.halv">Next halving = (floor(height ÷ 210,000) + 1) × 210,000</div>
+          <div class="inp-row"><span data-i18n="fx.height">Current height</span><b id="dHalvH">—</b></div>
+          <div class="inp-row"><span data-i18n="fx.blocks">Blocks remaining</span><b id="dHalvR">—</b></div>
+          <div class="inp-row"><span data-i18n="fx.estDate">Estimated date</span><b id="dHalvD">—</b></div>
+        </div>
+      </div>
+
+      <!-- C. Mining -->
+      <div class="in-group">
+        <h3><span class="bar"></span><span data-i18n="inp.ops">Operating parameters</span></h3>
+
+        <!-- The rack date anchors the calendar (month windows + block clock), so
+             it belongs with the site's operating assumptions, not the spec sheet
+             of the machine itself. Its DOM id is unchanged, so every reader —
+             the input binder, the reset path, the URL codec — keeps working. -->
+        <div class="field">
+          <label data-i18n="inp.rack">Rack date</label>
+          <div class="ctl">
+            <input class="inp" type="date" id="rackDate" data-date="rackDate" aria-label="Rack date" data-i18n-attr="aria-label:inp.rack">
+          </div>
+          <p class="note" data-i18n="inp.rackHint">anchors the month windows and the block clock</p>
+        </div>
+
+        <div class="field">
+          <label><span data-i18n="inp.elec">Electricity price</span>
+            <button class="info" type="button" data-drawer="dElec" aria-label="How is this calculated?">i</button>
+          </label>
+          <div class="ctl">
+            <input class="inp" type="number" step="0.001" min="0" data-k="electricityPrice" aria-label="Electricity price" data-i18n-attr="aria-label:inp.elec">
+            <span class="unit" data-i18n="unit.perKwh">$ / kWh</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.uptime">Uptime</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="0.5" min="0" max="100" data-k="uptime" aria-label="Miner uptime" data-i18n-attr="aria-label:inp.uptime">
+            <span class="unit">%</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.pool">Pool fee</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="0.1" min="0" max="100" data-k="poolFee" aria-label="Pool fee" data-i18n-attr="aria-label:inp.pool">
+            <span class="unit">%</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.btcGrowth">BTC price growth</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="0.5" min="-50" max="200" data-k="btcGrowthAnnual" aria-label="BTC price growth" data-i18n-attr="aria-label:inp.btcGrowth">
+            <span class="unit">% / yr</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="inp.exit">BTC exit price (end of life)</label>
+          <div class="ctl">
+            <input class="inp" type="number" step="5000" min="0" data-k="exitPrice" aria-label="Exit BTC price" data-i18n-attr="aria-label:inp.exit">
+            <span class="unit">USD</span>
+          </div>
+        </div>
+
+        <div class="drawer" id="dElec">
+          <h4 data-i18n="fx.how">How is this calculated?</h4>
+          <div class="fx" data-i18n="fx.elec">Daily electricity = power ÷ 1000 × 24 × price × uptime</div>
+          <div class="inp-row"><span data-i18n="fx.power">Power</span><b id="dElP">—</b></div>
+          <div class="inp-row"><span data-i18n="fx.price">Price</span><b id="dElR">—</b></div>
+          <div class="inp-row"><span data-i18n="fx.uptime">Uptime</span><b id="dElU">—</b></div>
+          <div class="inp-row"><span data-i18n="fx.dailyCost">Daily cost</span><b id="dElC">—</b></div>
+          <p class="note" data-i18n="fx.elecNote">Uptime scales consumption down as well as production, so a partially online machine saves power but also earns less.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CORE METRICS ================= -->
+  <section class="sec kpis">
+    <div class="kpi hero">
+      <div class="k-label"><span data-i18n="kpi.cost">Mining Cost / BTC</span> <span id="kpiCostTag"></span></div>
+      <div class="k-value" id="kpiCostVal">—</div>
+      <div class="k-sub" id="kpiCostSub"></div>
+    </div>
+    <div class="kpi hero">
+      <div class="k-label"><span data-i18n="kpi.shut">Shutdown BTC Price</span> <span id="kpiShutTag"></span></div>
+      <div class="k-value" id="kpiShutVal">—</div>
+      <div class="k-sub" id="kpiShutSub"></div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span data-i18n="kpi.profit">Daily Net Profit</span> <span id="kpiProfitTag"></span></div>
+      <div class="k-value" id="kpiProfitVal">—</div>
+      <div class="k-sub" id="kpiProfitSub">—</div>
+    </div>
+    <div class="kpi">
+      <div class="k-label"><span data-i18n="kpi.pay">Static Payback</span> <span id="kpiPayTag"></span></div>
+      <div class="k-value" id="kpiPayVal">—</div>
+      <div class="k-sub" id="kpiPaySub">—</div>
+    </div>
+  </section>
+
+  <!-- ================= ECONOMICS + PAYBACK PRICE ================= -->
+  <section class="sec grid2">
+    <div class="panel">
+      <div class="panel-hd">
+        <h2 data-i18n="econ.title">Mining Economics</h2>
+        <div class="panel-sp"></div>
+        <span class="hint" data-i18n="econ.hint">per unit, per day</span>
+      </div>
+      <div class="panel-bd" style="padding-top:8px">
+        <div class="grid2" style="gap:22px">
+          <div class="tbl-scroll"><table class="tbl"><tbody id="econRows"></tbody></table></div>
+          <div>
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-3);margin:4px 0 10px" data-i18n="econ.mix">Daily cost mix</div>
+            <div id="econMix"></div>
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-3);margin:18px 0 8px" data-i18n="econ.unit">Unit detail</div>
+            <div id="econVol"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd">
+        <h2 data-i18n="pay.title">Required BTC Price for Payback</h2>
+        <div class="panel-sp"></div>
+        <span class="hint" data-i18n="pay.hint">electricity-only break-even</span>
+      </div>
+      <div class="panel-bd">
+        <div class="kpis" style="grid-template-columns:repeat(3,1fr);gap:12px">
+          <div class="kpi" style="padding:14px">
+            <div class="k-label" data-i18n="pay.m18">18 Months</div>
+            <div class="k-value" id="pb18Val" style="font-size:25px">—</div>
+            <div class="k-sub" id="pb18Sub">—</div>
+          </div>
+          <div class="kpi" style="padding:14px">
+            <div class="k-label" data-i18n="pay.m24">24 Months</div>
+            <div class="k-value" id="pb24Val" style="font-size:25px">—</div>
+            <div class="k-sub" id="pb24Sub">—</div>
+          </div>
+          <div class="kpi" style="padding:14px">
+            <div class="k-label" data-i18n="pay.m48">48 Months</div>
+            <div class="k-value" id="pb48Val" style="font-size:25px">—</div>
+            <div class="k-sub" id="pb48Sub">—</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px" class="drawer on">
+          <h4 data-i18n="fx.how">How is this calculated?</h4>
+          <div class="fx" data-i18n="fx.paybackTarget">Required BTC price = (machine price ÷ target days + daily electricity) ÷ miner BTC/day</div>
+          <div class="inp-row"><span data-i18n="pay.target18">18M target days</span><b>540</b></div>
+          <div class="inp-row"><span data-i18n="pay.target24">24M target days</span><b>720</b></div>
+          <div class="inp-row"><span data-i18n="pay.target48">48M target days</span><b>1,440</b></div>
+          <p class="note" data-i18n="pay.note">Repaying the machine itself out of cash flow, electricity covered. BTC above this level clears the capex inside the window; BTC below it does not.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CHART 1 ================= -->
+  <section class="sec panel">
+    <div class="panel-hd">
+      <h2 data-i18n="ch1.title">Shutdown Price</h2>
+      <div class="panel-sp"></div>
+      <span class="hint" data-i18n="ch1.hint">{n}-year horizon, hashrate-adjusted</span>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--chart-2)"></i><span data-i18n="cg.shutdown">Shutdown price</span></span>
+      <span><i class="dash"></i><span data-i18n="cg.halving">Halving</span></span>
+    </div>
+    <div class="chartbox" id="chartPrice"></div>
+  </section>
+
+  <!-- ================= CHART 2 + 3 ================= -->
+  <section class="sec grid2">
+    <div class="panel">
+      <div class="panel-hd">
+        <h2 data-i18n="ch2.title">Mining Cost / BTC</h2>
+        <div class="panel-sp"></div>
+        <span class="hint" data-i18n="ch2.hint">cumulative cost ÷ cumulative BTC</span>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--chart-1)"></i><span data-i18n="cg.cost">Cost / BTC</span></span>
+        <span><i class="dash"></i><span data-i18n="cg.currentCost">Current BTC price</span></span>
+      </div>
+      <div class="chartbox" id="chartCost"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hd">
+        <h2 data-i18n="ch3.title">Network Hashrate Growth</h2>
+        <div class="panel-sp"></div>
+        <span class="hint" data-i18n="ch3.hint">compound projection</span>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--chart-4)"></i><span data-i18n="cg.hashrate">Network hashrate</span></span>
+      </div>
+      <div class="chartbox" id="chartHash"></div>
+    </div>
+  </section>
+
+  <!-- ================= MONTHLY COST DETAIL ================= -->
+  <section class="sec panel" id="mdet">
+    <div class="panel-hd">
+      <h2 data-i18n="mdet.title">Monthly Cost Detail</h2>
+      <div class="panel-sp"></div>
+      <span class="hint" data-i18n="mdet.hint">one billing period per line, from the rack date</span>
+    </div>
+    <div class="tbl-scroll" style="max-height:560px;overflow-y:auto">
+      <table class="tbl">
+        <thead id="mdetHead"></thead>
+        <tbody id="mdetBody"></tbody>
+      </table>
+    </div>
+    <div class="panel-bd" style="padding-top:12px;padding-bottom:14px">
+      <p class="vs-note" id="mdetNote" style="margin:0"></p>
+    </div>
+  </section>
+
+  <!-- ================= BREAKDOWN ================= -->
+  <section class="sec panel">
+    <div class="panel-hd">
+      <h2 data-i18n="ch4.title">Cumulative Cost Breakdown</h2>
+      <div class="panel-sp"></div>
+      <span class="hint" data-i18n="ch4.hint">straight-line capex accrual</span>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--chart-2)"></i><span data-i18n="cg.capex">Machine capex (sunk)</span></span>
+      <span><i class="sw" style="background:var(--chart-1)"></i><span data-i18n="cg.electricity">Accumulated electricity</span></span>
+    </div>
+    <div class="chartbox" id="chartBreak"></div>
+  </section>
+
+  <!-- ================= MINING vs SPOT ================= -->
+  <section class="sec panel">
+    <div class="panel-hd">
+      <h2 data-i18n="vs.title">Mining vs Buy &amp; Hold</h2>
+      <div class="panel-sp"></div>
+      <span class="hint" data-i18n="vs.hint">same capital, two routes</span>
+    </div>
+    <div class="vs-hero">
+      <div class="vs-half">
+        <h3 data-i18n="vs.mining">BTC from mining</h3>
+        <div class="vs-big" id="vsMining">—</div>
+        <div class="vs-note" data-i18n="vs.miningNote">Total BTC produced by the machine over its modelled life.</div>
+        <div style="margin-top:16px">
+          <h3 data-i18n="vs.ratio">Mining / Spot</h3>
+          <div class="vs-big" id="vsRatio" style="font-size:26px">—</div>
+        </div>
+        <div id="vsGauge"></div>
+      </div>
+      <div class="vs-half">
+        <h3 data-i18n="vs.spot">BTC from spot purchase</h3>
+        <div class="vs-big" id="vsSpot">—</div>
+        <div class="vs-note" data-i18n="vs.spotNote">Machine purchase cost plus {n} years of electricity, converted to BTC at today's spot price.</div>
+        <div style="margin-top:16px" id="vsRows"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SENSITIVITY ================= -->
+  <section class="sec panel">
+    <div class="panel-hd">
+      <h2 data-i18n="sens.title">Sensitivity Analysis</h2>
+      <div class="panel-sp"></div>
+      <span class="hint" data-i18n="sens.hint">net profit per BTC produced</span>
+    </div>
+    <div class="panel-bd">
+      <div class="grid2" style="gap:26px">
+        <div>
+          <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-3);margin-bottom:10px">
+            <span data-i18n="sens.grid">BTC growth × Hashrate growth</span>
+          </div>
+          <div class="tbl-scroll">
+            <table class="heat" id="heat"></table>
+          </div>
+          <p class="vs-note" id="heatLabel"></p>
+          <p class="vs-note" id="heatScale"></p>
+          <p class="vs-note" data-i18n="sens.note">Headline cost/BTC depends only on hashrate growth, and ROI depends only on the fixed exit price — so this table uses <b>net profit per BTC produced</b>, the one metric both axes move. Negative cells mean the cumulative cash flow does not repay the machine.</p>
+        </div>
+        <div>
+          <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-3);margin-bottom:10px">
+            <span data-i18n="sens.elec">Electricity sensitivity</span>
+          </div>
+          <div class="tbl-scroll">
+            <table class="tbl">
+              <thead><tr><th data-i18n="sens.powerPrice">Power price</th><th data-i18n="sens.costPerBtc">Cost / BTC</th><th data-i18n="sens.shutdown">Shutdown</th><th data-i18n="sens.roi">Mining ROI</th><th data-i18n="sens.dailyPl">Daily P/L</th></tr></thead>
+              <tbody id="elecRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="chartbox" style="margin-top:14px" id="chartSens"></div>
+      <div class="chartbox" id="chartElec"></div>
+    </div>
+  </section>
+
+  <!-- ================= ASSUMPTIONS ================= -->
+  <section class="sec panel">
+    <div class="panel-hd">
+      <h2 data-i18n="asm.title">Model Assumptions</h2>
+      <div class="panel-sp"></div>
+      <span class="hint" data-i18n="asm.hint">read before acting on any number above</span>
+    </div>
+    <div class="panel-bd">
+      <div class="meth" id="assumptions"></div>
+      <details class="mform">
+        <summary data-i18n="asm.formulas">Formulas used in this model</summary>
+        <div class="fmlist" id="formulas"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= DATA SOURCE + SHARE ================= -->
+  <section class="sec grid2">
+    <div class="panel">
+      <div class="panel-hd"><h2 data-i18n="data.title">Model Data</h2><div class="panel-sp"></div><span class="hint" data-i18n="data.hint">sources and freshness</span></div>
+      <div class="panel-bd" id="dataSrc"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hd"><h2 data-i18n="share.title">Share this model</h2><div class="panel-sp"></div><span class="hint" data-i18n="share.hint">parameters encoded in the URL</span></div>
+      <div class="panel-bd">
+        <div class="ctl solo" style="margin-bottom:10px">
+          <input class="inp" type="text" id="shareUrl" readonly aria-label="Shareable model URL" data-i18n-attr="aria-label:share.aria" style="font-size:12px">
+        </div>
+        <button class="tbtn" type="button" id="btnCopy" data-i18n="btn.copy">Copy link</button>
+        <p class="vs-note" style="margin-top:12px" data-i18n="share.note">
+          Anyone opening the link restores every parameter. Live values (BTC price, network hashrate) follow their own
+          Live / Manual switch, so a shared link always starts tracking the market again unless overridden.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div data-i18n="footer.note">Estimates only. Not investment advice.</div>
+    <div style="margin-top:10px">
+      <span data-i18n="footer.author">Author</span> <a href="https://x.com/miner_huang" target="_blank" rel="noopener noreferrer">@miner_huang</a> ·
+      <a href="https://x.com/miner_huang" target="_blank" rel="noopener noreferrer">https://x.com/miner_huang</a>
+    </div>
+  </div>
+</main>
+
+<div class="theme-pop" id="langPop" role="menu" aria-label="Language"></div>
+<div class="theme-pop" id="themePop" role="menu" aria-label="Theme"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Offline fallback so the model never dies if market.json cannot be fetched (spec §37) */
+window.__MARKET_FALLBACK__ = {
+  "_comment": "Bitcoin Mining Cost Model — live snapshot refreshed in CI. See .github/workflows/refresh-market.yml",
+  "asof_utc": "2026-10-05T09:56:03Z",
+  "btc_price_usd": 85977,
+  "network_hashrate_ehs": 960.3,
+  "network_hashrate_7d_ehs": 961.36,
+  "difficulty": 132716002350731.3,
+  "block_height": 969994,
+  "block_subsidy_btc": 3.125,
+  "next_halving_height": 1050000,
+  "blocks_per_halving": 210000,
+  "blocks_remaining_to_halving": 80006,
+  "next_halving_est_date": "2028-04-13",
+  "blocks_per_day": 144,
+  "hashrate_90d_change_pct": null,
+  "hashrate_1y_change_pct": null,
+  "sources": {
+    "btc_price_usd": "baked snapshot (offline fallback)",
+    "network_hashrate_ehs": "baked snapshot (offline fallback)",
+    "network_hashrate_7d_ehs": "baked snapshot (offline fallback)",
+    "difficulty": "baked snapshot (offline fallback)",
+    "block_height": "baked snapshot (offline fallback)",
+    "block_subsidy_btc": "baked snapshot (offline fallback)"
+  }
+};
+</script>
+<script src="scripts/i18n.js"></script>
+<script src="scripts/engine.js"></script>
+<script src="scripts/data.js"></script>
+<script src="scripts/charts.js"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>

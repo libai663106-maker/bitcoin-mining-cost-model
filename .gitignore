@@ -1,0 +1,28 @@
+# ==========================================================================
+# QA artefacts — screenshots, puppeteer/chrome profiles, traces, logs.
+# ~150 MB. Never deploy: GitHub Pages should only serve the model itself.
+# ==========================================================================
+qa/
+
+# --------------------------------------------------------------------------
+# Local scratch / editor state
+# --------------------------------------------------------------------------
+.workbuddy/
+*.genie
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# --------------------------------------------------------------------------
+# Local preview mirror — byte-identical copy of the source served by the
+# editor preview. There is no build step, so committing it would double every
+# change and invite drift. The repo itself is the deployable.
+# --------------------------------------------------------------------------
+dist/
+
+# --------------------------------------------------------------------------
+# Keep the template but never commit real local overrides
+# --------------------------------------------------------------------------
+.env
+.env.local
